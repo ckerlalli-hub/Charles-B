@@ -9,6 +9,18 @@ from auth import get_credentials
 from gmail_service import Email
 
 
+def _utf16_len(text: str) -> int:
+    """Return the number of UTF-16 code units in *text*.
+
+    The Google Docs API counts positions in UTF-16 code units, not Python
+    code points.  For characters in the Basic Multilingual Plane (most Latin,
+    Cyrillic, CJK, etc.) the two counts are equal, but surrogate pairs
+    (emojis, some rare symbols) occupy 2 UTF-16 units while Python counts
+    them as 1.
+    """
+    return len(text.encode("utf-16-le")) // 2
+
+
 def _upload_image_to_drive(drive_service, image_data: bytes, filename: str, mime_type: str) -> str:
     """Upload an image to Google Drive and return its public URL."""
     media = MediaInMemoryUpload(image_data, mimetype=mime_type, resumable=False)
@@ -67,51 +79,55 @@ def compile_to_gdoc(emails: list[Email], title: str | None = None) -> str:
         # --- Subject (Heading 1) ---
         subject_text = email.subject + "\n"
         requests.append({"insertText": {"location": {"index": idx}, "text": subject_text}})
+        subject_len = _utf16_len(subject_text)
         requests.append(
             {
                 "updateParagraphStyle": {
-                    "range": {"startIndex": idx, "endIndex": idx + len(subject_text)},
+                    "range": {"startIndex": idx, "endIndex": idx + subject_len},
                     "paragraphStyle": {"namedStyleType": "HEADING_1"},
                     "fields": "namedStyleType",
                 }
             }
         )
-        idx += len(subject_text)
+        idx += subject_len
 
         # --- Preview / Snippet (italic) ---
         preview_text = f"Aperçu : {email.snippet}\n"
+        preview_len = _utf16_len(preview_text)
         requests.append({"insertText": {"location": {"index": idx}, "text": preview_text}})
         requests.append(
             {
                 "updateTextStyle": {
-                    "range": {"startIndex": idx, "endIndex": idx + len(preview_text) - 1},
+                    "range": {"startIndex": idx, "endIndex": idx + preview_len - 1},
                     "textStyle": {"italic": True},
                     "fields": "italic",
                 }
             }
         )
-        idx += len(preview_text)
+        idx += preview_len
 
-        # --- Horizontal rule ---
-        requests.append({"insertText": {"location": {"index": idx}, "text": "\n"}})
-        idx += 1
-        requests.append({"insertSectionBreak": {"location": {"index": idx - 1}, "sectionType": "CONTINUOUS"}})
+        # --- Horizontal rule (text separator) ---
+        separator = "━" * 50 + "\n"
+        sep_len = _utf16_len(separator)
+        requests.append({"insertText": {"location": {"index": idx}, "text": separator}})
+        idx += sep_len
 
         # --- Body text ---
         body = email.body_text.strip()
         if body:
             body_text = body + "\n"
+            body_len = _utf16_len(body_text)
             requests.append({"insertText": {"location": {"index": idx}, "text": body_text}})
             requests.append(
                 {
                     "updateParagraphStyle": {
-                        "range": {"startIndex": idx, "endIndex": idx + len(body_text)},
+                        "range": {"startIndex": idx, "endIndex": idx + body_len},
                         "paragraphStyle": {"namedStyleType": "NORMAL_TEXT"},
                         "fields": "namedStyleType",
                     }
                 }
             )
-            idx += len(body_text)
+            idx += body_len
 
         # --- Inline images ---
         for img in email.images:
@@ -143,8 +159,13 @@ def compile_to_gdoc(emails: list[Email], title: str | None = None) -> str:
 
     # Send all requests in one batch
     if requests:
-        docs_service.documents().batchUpdate(
-            documentId=doc_id, body={"requests": requests}
-        ).execute()
+        try:
+            docs_service.documents().batchUpdate(
+                documentId=doc_id, body={"requests": requests}
+            ).execute()
+        except Exception as exc:
+            print(f"Erreur lors du remplissage du document : {exc}")
+            print(f"Le document a été créé mais est vide : {doc_url}")
+            raise
 
     return doc_url
