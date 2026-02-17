@@ -44,13 +44,9 @@ def _upload_image_to_drive(drive_service, image_data: bytes, filename: str, mime
 def compile_to_gdoc(emails: list[Email], title: str | None = None) -> str:
     """Create a Google Doc containing all emails and return the document URL.
 
-    Structure per email:
-      - Heading 1: subject
-      - Italic paragraph: preview (snippet)
-      - Horizontal rule
-      - Body text (plain text, paragraphs preserved)
-      - Inline images inserted after the body
-      - Page break between emails
+    Strategy: insert ALL text in a single request, then apply formatting in
+    the same batch.  Images are uploaded to Drive and inserted in a second
+    batch, processed from end-to-start so index shifts don't cascade.
     """
     creds = get_credentials()
     docs_service = build("docs", "v1", credentials=creds)
@@ -65,107 +61,131 @@ def compile_to_gdoc(emails: list[Email], title: str | None = None) -> str:
     doc_id = doc["documentId"]
     doc_url = f"https://docs.google.com/document/d/{doc_id}/edit"
 
-    # Build a list of requests to populate the document.
-    # Google Docs API inserts are index-based; we build them in reverse order
-    # so the first email ends up at the top.
-    requests: list[dict] = []
+    # ------------------------------------------------------------------
+    # Phase 1 – Build the full text and record formatting ranges
+    # ------------------------------------------------------------------
+    full_text = ""
+    utf16_offset = 0          # running offset in UTF-16 code units
 
-    # We track the current insertion index (starts at 1, right after the doc start).
-    idx = 1
+    headings: list[tuple[int, int]] = []   # (start, end) for HEADING_1
+    italics: list[tuple[int, int]] = []    # (start, end) for italic
+    # (utf16_offset, list of EmailImage) – where to insert images later
+    image_points: list[tuple[int, list]] = []
 
     for i, email in enumerate(emails):
-        start = idx
-
-        # --- Subject (Heading 1) ---
+        # --- Subject ---
         subject_text = email.subject + "\n"
-        requests.append({"insertText": {"location": {"index": idx}, "text": subject_text}})
-        subject_len = _utf16_len(subject_text)
+        subj_start = utf16_offset
+        subj_len = _utf16_len(subject_text)
+        headings.append((subj_start, subj_start + subj_len))
+        full_text += subject_text
+        utf16_offset += subj_len
+
+        # --- Preview / Snippet ---
+        preview_text = f"Aperçu : {email.snippet}\n"
+        prev_start = utf16_offset
+        prev_len = _utf16_len(preview_text)
+        # italic everything except the trailing newline
+        italics.append((prev_start, prev_start + prev_len - 1))
+        full_text += preview_text
+        utf16_offset += prev_len
+
+        # --- Separator ---
+        separator = "━" * 50 + "\n"
+        full_text += separator
+        utf16_offset += _utf16_len(separator)
+
+        # --- Body ---
+        body = email.body_text.strip()
+        if body:
+            body_text = body + "\n"
+            full_text += body_text
+            utf16_offset += _utf16_len(body_text)
+
+        # --- Track image insertion point ---
+        active_images = [img for img in email.images if img.data]
+        if active_images:
+            image_points.append((utf16_offset, active_images))
+
+        # --- Visual gap between emails ---
+        if i < len(emails) - 1:
+            gap = "\n\n"
+            full_text += gap
+            utf16_offset += _utf16_len(gap)
+
+    # ------------------------------------------------------------------
+    # Phase 2 – Insert text + apply formatting (single batchUpdate)
+    # ------------------------------------------------------------------
+    requests: list[dict] = []
+
+    if full_text:
+        requests.append(
+            {"insertText": {"location": {"index": 1}, "text": full_text}}
+        )
+
+    # All offsets below are shifted by +1 (the doc body starts at index 1)
+    for start, end in headings:
         requests.append(
             {
                 "updateParagraphStyle": {
-                    "range": {"startIndex": idx, "endIndex": idx + subject_len},
+                    "range": {"startIndex": 1 + start, "endIndex": 1 + end},
                     "paragraphStyle": {"namedStyleType": "HEADING_1"},
                     "fields": "namedStyleType",
                 }
             }
         )
-        idx += subject_len
 
-        # --- Preview / Snippet (italic) ---
-        preview_text = f"Aperçu : {email.snippet}\n"
-        preview_len = _utf16_len(preview_text)
-        requests.append({"insertText": {"location": {"index": idx}, "text": preview_text}})
+    for start, end in italics:
         requests.append(
             {
                 "updateTextStyle": {
-                    "range": {"startIndex": idx, "endIndex": idx + preview_len - 1},
+                    "range": {"startIndex": 1 + start, "endIndex": 1 + end},
                     "textStyle": {"italic": True},
                     "fields": "italic",
                 }
             }
         )
-        idx += preview_len
 
-        # --- Horizontal rule (text separator) ---
-        separator = "━" * 50 + "\n"
-        sep_len = _utf16_len(separator)
-        requests.append({"insertText": {"location": {"index": idx}, "text": separator}})
-        idx += sep_len
-
-        # --- Body text ---
-        body = email.body_text.strip()
-        if body:
-            body_text = body + "\n"
-            body_len = _utf16_len(body_text)
-            requests.append({"insertText": {"location": {"index": idx}, "text": body_text}})
-            requests.append(
-                {
-                    "updateParagraphStyle": {
-                        "range": {"startIndex": idx, "endIndex": idx + body_len},
-                        "paragraphStyle": {"namedStyleType": "NORMAL_TEXT"},
-                        "fields": "namedStyleType",
-                    }
-                }
-            )
-            idx += body_len
-
-        # --- Inline images ---
-        for img in email.images:
-            if not img.data:
-                continue
-            image_url = _upload_image_to_drive(
-                drive_service, img.data, img.filename, img.mime_type
-            )
-            requests.append(
-                {
-                    "insertInlineImage": {
-                        "location": {"index": idx},
-                        "uri": image_url,
-                        "objectSize": {
-                            "width": {"magnitude": 400, "unit": "PT"},
-                        },
-                    }
-                }
-            )
-            # An inline image occupies 1 index position
-            idx += 1
-            requests.append({"insertText": {"location": {"index": idx}, "text": "\n"}})
-            idx += 1
-
-        # --- Page break between emails (except after the last one) ---
-        if i < len(emails) - 1:
-            requests.append({"insertPageBreak": {"location": {"index": idx}}})
-            idx += 2  # page break + newline
-
-    # Send all requests in one batch
     if requests:
-        try:
+        docs_service.documents().batchUpdate(
+            documentId=doc_id, body={"requests": requests}
+        ).execute()
+
+    # ------------------------------------------------------------------
+    # Phase 3 – Insert images (separate batch, end-to-start)
+    # ------------------------------------------------------------------
+    if image_points:
+        img_requests: list[dict] = []
+
+        # Process from last insertion point to first so earlier indices
+        # are not affected by later insertions.
+        for utf16_pos, images in reversed(image_points):
+            doc_idx = 1 + utf16_pos
+            # Within each point, insert images in reverse so they end up
+            # in the original order (each insert pushes previous ones right).
+            for img in reversed(images):
+                image_url = _upload_image_to_drive(
+                    drive_service, img.data, img.filename, img.mime_type
+                )
+                # Insert a newline first, then the image before it
+                img_requests.append(
+                    {"insertText": {"location": {"index": doc_idx}, "text": "\n"}}
+                )
+                img_requests.append(
+                    {
+                        "insertInlineImage": {
+                            "location": {"index": doc_idx},
+                            "uri": image_url,
+                            "objectSize": {
+                                "width": {"magnitude": 400, "unit": "PT"},
+                            },
+                        }
+                    }
+                )
+
+        if img_requests:
             docs_service.documents().batchUpdate(
-                documentId=doc_id, body={"requests": requests}
+                documentId=doc_id, body={"requests": img_requests}
             ).execute()
-        except Exception as exc:
-            print(f"Erreur lors du remplissage du document : {exc}")
-            print(f"Le document a été créé mais est vide : {doc_url}")
-            raise
 
     return doc_url
