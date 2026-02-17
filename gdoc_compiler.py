@@ -13,11 +13,12 @@ _SURROGATE_RE = re.compile(r"[^\u0000-\uffff]")
 
 
 def _sanitize(text: str) -> str:
-    """Remove characters that would need surrogate pairs in UTF-16.
+    """Normalise text so Python len() matches Google Docs index counting.
 
-    This avoids index mismatches between Python len() and the Google
-    Docs API (which counts UTF-16 code units).
+    - Normalises \\r\\n / \\r line endings to \\n (Docs API does this silently).
+    - Removes characters outside the BMP (surrogate pairs in UTF-16).
     """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
     return _SURROGATE_RE.sub("", text)
 
 
@@ -70,26 +71,41 @@ def compile_to_gdoc(emails: list[Email], title: str | None = None) -> str:
         return doc_url
 
     # ------------------------------------------------------------------
-    # Phase 2 – Single insertText then formatting
+    # Phase 2 – Insert text, then apply formatting in a second call
     # ------------------------------------------------------------------
-    requests: list[dict] = [
-        {"insertText": {"location": {"index": 1}, "text": full_text}}
-    ]
+    print(f"  Insertion de {len(full_text)} caractères dans le document…")
+    docs_service.documents().batchUpdate(
+        documentId=doc_id,
+        body={"requests": [
+            {"insertText": {"location": {"index": 1}, "text": full_text}}
+        ]},
+    ).execute()
 
+    # Read back the actual document length so we never style past the end
+    updated_doc = docs_service.documents().get(documentId=doc_id).execute()
+    doc_end = updated_doc["body"]["content"][-1]["endIndex"]
+
+    fmt_requests: list[dict] = []
     for start, end in headings:
-        requests.append(
+        abs_start = 1 + start
+        abs_end = 1 + end
+        if abs_end > doc_end:
+            # Skip headings that would exceed the actual document length
+            continue
+        fmt_requests.append(
             {
                 "updateParagraphStyle": {
-                    "range": {"startIndex": 1 + start, "endIndex": 1 + end},
+                    "range": {"startIndex": abs_start, "endIndex": abs_end},
                     "paragraphStyle": {"namedStyleType": "HEADING_1"},
                     "fields": "namedStyleType",
                 }
             }
         )
 
-    print(f"  Insertion de {len(full_text)} caractères dans le document…")
-    docs_service.documents().batchUpdate(
-        documentId=doc_id, body={"requests": requests}
-    ).execute()
+    if fmt_requests:
+        print(f"  Application du formatage ({len(fmt_requests)} titres)…")
+        docs_service.documents().batchUpdate(
+            documentId=doc_id, body={"requests": fmt_requests}
+        ).execute()
 
     return doc_url
