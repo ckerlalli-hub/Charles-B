@@ -24,7 +24,7 @@ def main():
     parser.add_argument(
         "--max",
         type=int,
-        default=50,
+        default=150,
         dest="max_results",
         help="Nombre maximum de mails à récupérer (défaut : 50).",
     )
