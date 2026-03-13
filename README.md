@@ -1,6 +1,6 @@
-# Charles B – Gmail → Google Doc Compiler
+# Compilateur de mail – Gmail → Google Doc Compiler
 
-Récupère les mails Gmail ayant le label **« Charles B »** et compile leur contenu (titre, aperçu, corps, images) dans un Google Doc sur votre Drive.
+Récupère les mails Gmail ayant le label **« Compilateur de mail »** et compile leur contenu (titre, aperçu, corps, images) dans un Google Doc sur votre Drive.
 
 ## Prérequis
 
@@ -37,7 +37,7 @@ Au premier lancement, un navigateur s'ouvrira pour vous authentifier avec votre 
 
 | Option      | Description                                     | Défaut        |
 |-------------|-------------------------------------------------|---------------|
-| `--label`   | Nom du label Gmail à filtrer                    | `Charles B`   |
+| `--label`   | Nom du label Gmail à filtrer                    | `Compilateur de mail`   |
 | `--max`     | Nombre maximum de mails à récupérer             | `50`          |
 | `--title`   | Titre personnalisé pour le Google Doc           | Auto (+ date) |
 

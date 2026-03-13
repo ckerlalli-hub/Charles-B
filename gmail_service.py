@@ -10,7 +10,7 @@ from googleapiclient.discovery import build
 
 from auth import get_credentials
 
-LABEL_NAME = "Charles B"
+LABEL_NAME = "Compilateur de mail"
 
 
 @dataclass

@@ -33,7 +33,7 @@ def compile_to_gdoc(emails: list[Email], title: str | None = None) -> str:
 
     if title is None:
         today = datetime.now().strftime("%Y-%m-%d")
-        title = f"Charles B \u2013 Compilation mails ({today})"
+        title = f"Compilateur de mail \u2013 Compilation mails ({today})"
 
     doc = docs_service.documents().create(body={"title": title}).execute()
     doc_id = doc["documentId"]

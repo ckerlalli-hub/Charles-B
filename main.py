@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Gmail → Google Doc compiler.
 
-Fetches all emails labelled "Charles B" from Gmail and compiles them
+Fetches all emails labelled "Compilateur de mail" from Gmail and compiles them
 into a single Google Doc (title, preview, body, images).
 """
 
@@ -14,12 +14,12 @@ from gdoc_compiler import compile_to_gdoc
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Compile les mails Gmail labelisés 'Charles B' dans un Google Doc."
+        description="Compile les mails Gmail labelisés 'Compilateur de mail' dans un Google Doc."
     )
     parser.add_argument(
         "--label",
-        default="Charles B",
-        help="Nom du label Gmail à filtrer (défaut : 'Charles B').",
+        default="Compilateur de mail",
+        help="Nom du label Gmail à filtrer (défaut : 'Compilateur de mail').",
     )
     parser.add_argument(
         "--max",

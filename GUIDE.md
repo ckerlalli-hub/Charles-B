@@ -196,7 +196,7 @@ Le programme filtre les emails par **label Gmail**. Vous devez donc avoir un lab
 
 1. Ouvrez **[Gmail](https://mail.google.com)**
 2. Dans le menu lateral gauche, cliquez sur **"Plus"** puis **"Creer un libelle"**
-3. Entrez le nom souhaite (par exemple : `Newsletters`, `Rapports`, `Charles B`)
+3. Entrez le nom souhaite (par exemple : `Newsletters`, `Rapports`, `Compilateur de mail`)
 4. Cliquez sur **"Creer"**
 
 ### Appliquer le label a des emails :
@@ -259,9 +259,9 @@ Termine ! Votre document est disponible ici :
 
 | Parametre   | Description                               | Valeur par defaut                        |
 |-------------|-------------------------------------------|------------------------------------------|
-| `--label`   | Nom du label Gmail a filtrer              | `Charles B`                              |
+| `--label`   | Nom du label Gmail a filtrer              | `Compilateur de mail`                    |
 | `--max`     | Nombre maximum d'emails a recuperer       | `150`                                    |
-| `--title`   | Titre personnalise pour le Google Doc     | Auto : `Charles B – Compilation mails (YYYY-MM-DD)` |
+| `--title`   | Titre personnalise pour le Google Doc     | Auto : `Compilateur de mail – Compilation mails (YYYY-MM-DD)` |
 
 ### Exemples d'utilisation
 
