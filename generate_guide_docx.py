@@ -94,7 +94,7 @@ def build_document():
         "3. Creer un projet Google Cloud",
         "4. Activer les APIs necessaires",
         "5. Creer les identifiants OAuth 2.0",
-        "6. Installer le projet sur votre PC (Windows)",
+        "6. Recuperer le projet sur votre PC",
         "7. Preparer votre boite Gmail",
         "8. Lancer le programme",
         "9. Modifier le label et le nom du document",
@@ -127,7 +127,7 @@ def build_document():
     add_para(doc, "Avant de commencer, assurez-vous d'avoir :")
     add_bullet(doc, "Un compte Google (Gmail)")
     add_bullet(doc, "Python 3.10 ou superieur installe sur votre machine")
-    add_bullet(doc, "Git installe (pour cloner le projet)")
+    add_bullet(doc, "Git installe (optionnel, pour cloner le projet — sinon le ZIP suffit)")
     add_bullet(doc, "Un acces a Internet")
 
     add_heading(doc, "Verifier votre version de Python", level=2)
@@ -243,29 +243,39 @@ def build_document():
     add_separator(doc)
 
     # ===== SECTION 6 =====
-    add_heading(doc, "6 — Installer le projet sur votre PC (Windows)", level=1)
+    add_heading(doc, "6 — Recuperer le projet sur votre PC", level=1)
     add_para(doc,
-        "Cette section explique comment installer le projet en utilisant "
-        "l'Invite de commandes Windows (cmd) ou PowerShell."
+        "Le projet est heberge sur GitHub a l'adresse suivante :"
+    )
+    add_para(doc, "https://github.com/ckerlalli-hub/Charles-B", bold=True)
+    add_para(doc,
+        "Vous n'avez pas besoin de creer votre propre compte GitHub ni votre propre depot. "
+        "Il suffit de telecharger le projet une seule fois.",
+        italic=True,
     )
 
-    add_heading(doc, "6.1 — Ouvrir l'Invite de commandes", level=2)
-    add_numbered(doc, "Appuyez sur les touches Windows + R")
-    add_numbered(doc, "Tapez cmd puis appuyez sur Entree")
-    add_para(doc, "Ou bien : recherchez « Invite de commandes » dans le menu Demarrer.", italic=True)
-
-    add_heading(doc, "6.2 — Se placer dans le dossier souhaite", level=2)
-    add_para(doc,
-        "Naviguez vers le dossier ou vous souhaitez installer le projet. "
-        "Par exemple, pour l'installer sur le Bureau :"
+    add_heading(doc, "Option A — Telecharger le ZIP (le plus simple, sans Git)", level=2)
+    add_numbered(doc, "Rendez-vous sur https://github.com/ckerlalli-hub/Charles-B")
+    add_numbered(doc, 'Cliquez sur le bouton vert « <> Code »')
+    add_numbered(doc, 'Cliquez sur « Download ZIP »')
+    add_numbered(doc,
+        "Decompressez le fichier ZIP sur votre ordinateur "
+        "(par exemple dans le dossier Documents ou sur le Bureau)"
     )
+    add_numbered(doc,
+        "Vous obtenez un dossier « Charles-B-main ». "
+        "Renommez-le en « Charles-B » si vous le souhaitez."
+    )
+
+    add_heading(doc, "Option B — Cloner avec Git (si Git est installe)", level=2)
+    add_para(doc, "Ouvrez l'Invite de commandes (Windows + R → cmd → Entree) :")
     add_code_block(doc, "cd %USERPROFILE%\\Desktop")
-
-    add_heading(doc, "6.3 — Cloner le projet avec Git", level=2)
-    add_code_block(doc, "git clone https://github.com/VOTRE-UTILISATEUR/Charles-B.git")
-    add_note(doc, "Remplacez VOTRE-UTILISATEUR par le nom d'utilisateur GitHub qui vous a ete communique.")
-    add_para(doc, "Puis entrez dans le dossier du projet :")
+    add_code_block(doc, "git clone https://github.com/ckerlalli-hub/Charles-B.git")
     add_code_block(doc, "cd Charles-B")
+    add_note(doc,
+        "Avantage de Git : vous pourrez mettre a jour le projet plus tard "
+        "avec un simple « git pull »."
+    )
 
     add_heading(doc, "6.4 — Placer le fichier credentials.json", level=2)
     add_para(doc,

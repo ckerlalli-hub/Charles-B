@@ -40,7 +40,7 @@ Avant de commencer, assurez-vous d'avoir :
 
 - [ ] Un **compte Google** (Gmail)
 - [ ] **Python 3.10 ou superieur** installe sur votre machine
-- [ ] **Git** installe (pour cloner le projet)
+- [ ] **Git** installe (optionnel — sinon le telechargement ZIP suffit)
 - [ ] Un acces a Internet
 
 ### Verifier votre version de Python
@@ -139,18 +139,31 @@ C'est l'etape la plus importante : elle permet au programme de se connecter a vo
 
 ---
 
-## 6 — Installer le projet sur votre machine
+## 6 — Recuperer le projet sur votre machine
 
-### 6.1 — Cloner le projet
+Le projet est heberge sur GitHub a l'adresse suivante :
+**https://github.com/ckerlalli-hub/Charles-B**
+
+Vous n'avez **pas besoin** de creer votre propre compte GitHub ni votre propre depot. Il suffit de telecharger le projet une seule fois.
+
+### Option A — Telecharger le ZIP (sans Git, le plus simple)
+
+1. Rendez-vous sur **https://github.com/ckerlalli-hub/Charles-B**
+2. Cliquez sur le bouton vert **"<> Code"**
+3. Cliquez sur **"Download ZIP"**
+4. Decompressez le fichier ZIP sur votre ordinateur (par exemple dans `Documents`)
+5. Vous obtenez un dossier `Charles-B-main` — renommez-le en `Charles-B` si vous le souhaitez
+
+### Option B — Cloner avec Git (si Git est installe)
 
 Ouvrez un terminal et tapez :
 
 ```bash
-git clone https://github.com/VOTRE-UTILISATEUR/Charles-B.git
+git clone https://github.com/ckerlalli-hub/Charles-B.git
 cd Charles-B
 ```
 
-> Remplacez `VOTRE-UTILISATEUR` par le nom d'utilisateur GitHub ou l'URL qui vous a ete communiquee.
+> **Avantage de Git** : vous pourrez mettre a jour le projet plus tard avec un simple `git pull`.
 
 ### 6.2 — Placer le fichier credentials.json
 
