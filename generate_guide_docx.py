@@ -100,7 +100,9 @@ def build_document():
         "9. Modifier le label et le nom du document",
         "10. Comprendre le Google Doc genere",
         "11. Depannage",
-        "12. Questions frequentes",
+        "12. Interface web (alternative au terminal)",
+        "13. Utilisation avec Claude Code",
+        "14. Questions frequentes",
     ]
     for item in toc_items:
         doc.add_paragraph(item, style="List Number")
@@ -552,8 +554,55 @@ def build_document():
 
     add_separator(doc)
 
-    # ===== SECTION 12 =====
-    add_heading(doc, "12 — Questions frequentes", level=1)
+    # ===== SECTION 12 — Interface web =====
+    add_heading(doc, "12 — Interface web (alternative au terminal)", level=1)
+    add_para(doc,
+        "Si vous preferez ne pas utiliser le terminal, une interface web est disponible."
+    )
+
+    add_heading(doc, "Lancement", level=2)
+    add_para(doc, "Assurez-vous d'avoir installe les dependances, puis lancez :")
+    add_code_block(doc, "pip install -r requirements.txt")
+    add_code_block(doc, "python web_app.py")
+    add_para(doc,
+        "Votre navigateur ouvrira la page http://localhost:5000."
+    )
+
+    add_heading(doc, "Utilisation", level=2)
+    add_numbered(doc,
+        "Premiere fois : l'interface vous demandera de lancer d'abord "
+        "python main.py pour vous authentifier aupres de Google (une seule fois)"
+    )
+    add_numbered(doc,
+        "Ensuite : selectionnez votre label Gmail dans la liste deroulante, "
+        "choisissez le nombre max d'emails, et cliquez sur « Compiler les emails »"
+    )
+    add_numbered(doc,
+        "Le lien vers votre Google Doc s'affiche directement dans la page"
+    )
+
+    add_separator(doc)
+
+    # ===== SECTION 13 — Claude Code =====
+    add_heading(doc, "13 — Utilisation avec Claude Code (slash command)", level=1)
+    add_para(doc,
+        "Si vous utilisez Claude Code (l'outil CLI d'Anthropic), "
+        "une commande personnalisee est disponible :"
+    )
+    add_code_block(doc, '/compile-gmail Newsletters\n/compile-gmail "Rapports mensuels"')
+    add_para(doc,
+        "Cela lance directement la compilation sans avoir a taper "
+        "la commande Python complete.",
+        italic=True,
+    )
+    add_note(doc,
+        "Le fichier de commande se trouve dans .claude/commands/compile-gmail.md."
+    )
+
+    add_separator(doc)
+
+    # ===== SECTION 14 =====
+    add_heading(doc, "14 — Questions frequentes", level=1)
 
     faqs = [
         ("Est-ce gratuit ?",

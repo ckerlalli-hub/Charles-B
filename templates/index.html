@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charles-B — Compilateur Gmail</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 520px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 1.6rem;
+            margin-bottom: 8px;
+            color: #1a73e8;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 28px;
+            font-size: 0.95rem;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            margin-top: 18px;
+            font-size: 0.9rem;
+        }
+        select, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: #1a73e8;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            margin-top: 28px;
+            background: #1a73e8;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #1557b0; }
+        .btn:disabled {
+            background: #a0c4f1;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 24px;
+            padding: 16px;
+            border-radius: 8px;
+            display: none;
+        }
+        .result.success {
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            display: block;
+        }
+        .result.error {
+            background: #fce4ec;
+            border: 1px solid #ef9a9a;
+            display: block;
+        }
+        .result a {
+            color: #1a73e8;
+            font-weight: 600;
+            word-break: break-all;
+        }
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .not-auth {
+            background: #fff3e0;
+            border: 1px solid #ffcc80;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+        }
+        .not-auth code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Charles-B</h1>
+        <p class="subtitle">Compilez vos emails Gmail dans un Google Doc en un clic.</p>
+
+        {% if not authenticated %}
+        <div class="not-auth">
+            <strong>Authentification requise</strong><br><br>
+            Lancez d'abord le programme en ligne de commande pour vous authentifier :<br><br>
+            <code>python main.py --label "Mon Label"</code><br><br>
+            Cela ouvrira votre navigateur pour autoriser l'acces a votre compte Google.
+            Une fois fait, rechargez cette page.
+        </div>
+        {% else %}
+        <form id="compileForm">
+            <label for="label">Label Gmail</label>
+            {% if labels %}
+            <select name="label" id="label">
+                {% for lbl in labels %}
+                <option value="{{ lbl }}" {% if lbl == "Compilateur de mail" %}selected{% endif %}>{{ lbl }}</option>
+                {% endfor %}
+            </select>
+            {% else %}
+            <input type="text" name="label" id="label" value="Compilateur de mail" placeholder="Nom du label Gmail">
+            {% endif %}
+
+            <label for="max_results">Nombre max d'emails</label>
+            <input type="number" name="max_results" id="max_results" value="150" min="1" max="500">
+
+            <label for="title">Titre du document (optionnel)</label>
+            <input type="text" name="title" id="title" placeholder="Auto : Compilateur de mail – Compilation mails (date)">
+
+            <button type="submit" class="btn" id="submitBtn">Compiler les emails</button>
+        </form>
+
+        <div class="result" id="result"></div>
+        {% endif %}
+    </div>
+
+    <script>
+        const form = document.getElementById("compileForm");
+        if (form) {
+            form.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const btn = document.getElementById("submitBtn");
+                const resultDiv = document.getElementById("result");
+
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span>Compilation en cours...';
+                resultDiv.style.display = "none";
+                resultDiv.className = "result";
+
+                const formData = new FormData(form);
+
+                try {
+                    const resp = await fetch("/compile", { method: "POST", body: formData });
+                    const data = await resp.json();
+
+                    if (data.success) {
+                        resultDiv.className = "result success";
+                        resultDiv.innerHTML =
+                            "<strong>" + data.email_count + " email(s) compil&eacute;(s) !</strong><br><br>" +
+                            '<a href="' + data.doc_url + '" target="_blank">Ouvrir le Google Doc</a>';
+                    } else {
+                        resultDiv.className = "result error";
+                        resultDiv.textContent = data.error;
+                    }
+                } catch (err) {
+                    resultDiv.className = "result error";
+                    resultDiv.textContent = "Erreur de connexion : " + err.message;
+                }
+
+                btn.disabled = false;
+                btn.textContent = "Compiler les emails";
+            });
+        }
+    </script>
+</body>
+</html>

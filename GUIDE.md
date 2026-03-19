@@ -17,7 +17,9 @@ Ce guide vous accompagne pas-a-pas pour installer et utiliser l'outil **Charles-
 9. [Options avancees](#9--options-avancees)
 10. [Comprendre le Google Doc genere](#10--comprendre-le-google-doc-genere)
 11. [Depannage](#11--depannage)
-12. [Questions frequentes](#12--questions-frequentes)
+12. [Interface web (alternative au terminal)](#12--interface-web-alternative-au-terminal)
+13. [Utilisation avec Claude Code](#13--utilisation-avec-claude-code-slash-command)
+14. [Questions frequentes](#14--questions-frequentes)
 
 ---
 
@@ -388,7 +390,50 @@ Puis relancez `python main.py`. Le navigateur s'ouvrira a nouveau pour une nouve
 
 ---
 
-## 12 — Questions frequentes
+## 12 — Interface web (alternative au terminal)
+
+Si vous preferez ne pas utiliser le terminal, une interface web est disponible.
+
+### Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+> Flask est inclus dans les dependances.
+
+### Lancement
+
+```bash
+python web_app.py
+```
+
+Votre navigateur ouvrira la page `http://localhost:5000`.
+
+### Utilisation
+
+1. **Premiere fois** : l'interface vous demandera de lancer d'abord `python main.py` pour vous authentifier aupres de Google (une seule fois)
+2. **Ensuite** : selectionnez votre label Gmail dans la liste deroulante, choisissez le nombre max d'emails, et cliquez sur **"Compiler les emails"**
+3. Le lien vers votre Google Doc s'affiche directement dans la page
+
+---
+
+## 13 — Utilisation avec Claude Code (slash command)
+
+Si vous utilisez **Claude Code** (l'outil CLI d'Anthropic), une commande personnalisee est disponible :
+
+```
+/compile-gmail Newsletters
+/compile-gmail "Rapports mensuels"
+```
+
+Cela lance directement la compilation sans avoir a taper la commande Python complete.
+
+> Le fichier de commande se trouve dans `.claude/commands/compile-gmail.md`.
+
+---
+
+## 14 — Questions frequentes
 
 **Q : Est-ce gratuit ?**
 > Oui. Les APIs Google utilisees sont gratuites dans les limites d'usage quotidiennes (largement suffisantes pour un usage normal).
